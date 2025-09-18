@@ -12,154 +12,225 @@
 <body>
   <header>
     <h1>Registro de EPIs</h1>
-    <img src="assets/img/Logo Singapura.png" alt="">
+    <img src="assets/img/Logo_Singapura.png" alt="Logo Singapura">
   </header>
+
   <main>
-    <div class="all">
-      <div class="b1">
-        <form id="formEPI">
-          <label>Nome do Funcionário:</label>
+    <form id="formEPI">
+      <div class="all">
+        <div class="b1">
+          <label for="nome">Nome do Funcionário:</label>
           <input type="text" id="nome" required>
 
-          <label>Obra</label>
+          <label for="obra">Obra</label>
           <input type="text" id="obra" required>
 
-          <label>Retirada de EPI</label>
+          <label for="operacao">Retirada de EPI</label>
           <select id="operacao" required>
             <option value="coleta">Coleta</option>
             <option value="devolucao">Devolução</option>
           </select>
 
-          <label>Data</label>
+          <label for="data">Data</label>
           <input type="date" id="data" required>
 
-          <label>Nome do EPI</label>
+          <label for="epi">Nome do EPI</label>
           <input type="text" id="epi" required>
 
-          <label>CA do EPI</label>
+          <label for="ca">CA do EPI</label>
           <input type="text" id="ca" required>
-      </div>
-      <!-- Captura de Foto -->
-      <div class="b2">
-        <div class="camera">
-          <div>
-            <h3>Comprovação por Foto</h3>
-          </div><br>
-          <div class="cam">
-            <video id="video" width="300" height="200" autoplay></video><br>
-            <canvas id="fotoCanvas" width="300" height="200"></canvas>
+        </div>
+        <div class="b2">
+          <div class="camera">
+            <div>
+              <h3>Comprovação por Foto</h3>
+            </div><br>
+            <div class="cam">
+              <video id="video" width="300" height="200" autoplay></video><br>
+              <canvas id="fotoCanvas" width="300" height="200"></canvas>
+            </div>
+            <button type="button" onclick="tirarFoto()">Tirar Foto</button><br>
           </div>
-          <button type="button" onclick="tirarFoto()">Tirar Foto</button><br>
-        </div>
-        <!-- Assinatura Digital -->
-        <div class="assinatura">
-          <h3>Ou Assinatura Digital</h3><br>
-          <canvas id="assinatura" width="300" height="200"></canvas><br>
-          <button type="button" onclick="limparAssinatura()">Limpar Assinatura</button>
+
+          <div class="assinatura">
+            <h3>Ou Assinatura Digital</h3><br>
+            <canvas id="assinatura" width="300" height="200"></canvas><br>
+            <button type="button" onclick="limparAssinatura()">Limpar Assinatura</button>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="btnsave">
-      <button type="submit">Salvar Registro</button>
-    </div>
+      <div class="btnsave">
+        <button type="submit">Salvar Registro</button>
+      </div>
     </form>
   </main>
+
   <script>
-    // Ativar câmera
-    const video = document.getElementById('video');
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => { video.srcObject = stream; })
-      .catch(err => { alert("Erro ao acessar câmera: " + err); });
+    // O código agora está envolto em um evento que garante que o DOM está pronto.
+    document.addEventListener('DOMContentLoaded', () => {
 
-    // Captura de foto
-    const fotoCanvas = document.getElementById("fotoCanvas");
-    const ctxFoto = fotoCanvas.getContext("2d");
-    function tirarFoto() {
-      ctxFoto.drawImage(video, 0, 0, fotoCanvas.width, fotoCanvas.height);
-    }
+      // Ativar câmera
+      const video = document.getElementById('video');
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => { alert("Erro ao acessar câmera: " + err); });
 
-    // Assinatura digital
-    const canvas = document.getElementById("assinatura");
-    const ctx = canvas.getContext("2d");
-    let desenhando = false;
+      // Captura de foto
+      const fotoCanvas = document.getElementById("fotoCanvas");
+      const ctxFoto = fotoCanvas.getContext("2d");
 
-    canvas.addEventListener("mousedown", () => { desenhando = true; });
-    canvas.addEventListener("mouseup", () => { desenhando = false; ctx.beginPath(); });
-    canvas.addEventListener("mousemove", desenhar);
-
-    function desenhar(e) {
-      if (!desenhando) return;
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "black";
-
-      ctx.lineTo(e.offsetX, e.offsetY);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(e.offsetX, e.offsetY);
-    }
-
-    function limparAssinatura() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    // Salvar dados e gerar PDF
-    document.getElementById("formEPI").addEventListener("submit", async function (e) {
-      e.preventDefault();
-
-      const registro = {
-        nome: document.getElementById("nome").value,
-        obra: document.getElementById("obra").value,
-        operacao: document.getElementById("operacao").value,
-        data: document.getElementById("data").value,
-        epi: document.getElementById("epi").value,
-        ca: document.getElementById("ca").value,
-        foto: fotoCanvas.toDataURL(),
-        assinatura: canvas.toDataURL()
+      window.tirarFoto = function () {
+        ctxFoto.drawImage(video, 0, 0, fotoCanvas.width, fotoCanvas.height);
       };
 
-      // Salva no localStorage
-      let registros = JSON.parse(localStorage.getItem("registrosEPI")) || [];
-      registros.push(registro);
-      localStorage.setItem("registrosEPI", JSON.stringify(registros));
+      // Assinatura digital (mouse + touch)
+      const canvas = document.getElementById("assinatura");
+      const ctx = canvas.getContext("2d");
+      let desenhando = false;
 
-      // Criar PDF
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      doc.setFontSize(14);
-      doc.text("Comprovante de Registro de EPI", 20, 20);
-      doc.setFontSize(12);
-
-      doc.text(`Nome: ${registro.nome}`, 20, 40);
-      doc.text(`Obra: ${registro.obra}`, 20, 50);
-      doc.text(`Operação: ${registro.operacao}`, 20, 60);
-      doc.text(`Data: ${registro.data}`, 20, 70);
-      doc.text(`EPI: ${registro.epi}`, 20, 80);
-      doc.text(`CA: ${registro.ca}`, 20, 90);
-
-      // Adicionar foto
-      if (registro.foto) {
-        doc.text("Foto:", 20, 105);
-        doc.addImage(registro.foto, "PNG", 20, 110, 60, 40);
+      function getPosicao(e) {
+        const rect = canvas.getBoundingClientRect();
+        if (e.touches) {
+          return {
+            x: e.touches[0].clientX - rect.left,
+            y: e.touches[0].clientY - rect.top
+          };
+        } else {
+          return { x: e.offsetX, y: e.offsetY };
+        }
       }
 
-      // Adicionar assinatura
-      if (registro.assinatura) {
-        doc.text("Assinatura:", 20, 160);
-        doc.addImage(registro.assinatura, "PNG", 20, 165, 60, 40);
+      function desenhar(e) {
+        if (!desenhando) return;
+        const pos = getPosicao(e);
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "black";
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
       }
 
-      // Baixar PDF
-      doc.save(`Comprovante_EPI_${registro.nome}.pdf`);
+      // Eventos mouse
+      canvas.addEventListener("mousedown", (e) => {
+        desenhando = true;
+        const pos = getPosicao(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      });
+      canvas.addEventListener("mouseup", () => {
+        desenhando = false;
+      });
+      canvas.addEventListener("mousemove", desenhar);
 
-      alert("Registro salvo e PDF gerado com sucesso!");
-      this.reset();
-      limparAssinatura();
-      ctxFoto.clearRect(0, 0, fotoCanvas.width, fotoCanvas.height);
+      // Eventos touch
+      canvas.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        desenhando = true;
+        const pos = getPosicao(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      });
+      canvas.addEventListener("touchend", () => {
+        desenhando = false;
+      });
+      canvas.addEventListener("touchmove", (e) => {
+        e.preventDefault();
+        desenhar(e);
+      });
+
+      window.limparAssinatura = function () {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      };
+
+      // Salvar dados e gerar PDF
+      document.getElementById("formEPI").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        // Verificação para garantir que o formulário está sendo submetido
+        console.log("Evento de submit acionado!");
+
+        const registro = {
+          nome: document.getElementById("nome").value,
+          obra: document.getElementById("obra").value,
+          operacao: document.getElementById("operacao").value,
+          data: document.getElementById("data").value,
+          epi: document.getElementById("epi").value,
+          ca: document.getElementById("ca").value,
+          foto: fotoCanvas.toDataURL(),
+          assinatura: canvas.toDataURL()
+        };
+
+        // Criar PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const fundo = new Image();
+        fundo.src = "assets/img/Fundo_Logo.png";
+
+        const logo = new Image();
+        logo.src = "assets/img/Logo_Singapura.png";
+
+        // Carregar imagens antes de gerar o PDF
+        Promise.all([
+          new Promise(resolve => fundo.onload = resolve),
+          new Promise(resolve => logo.onload = resolve)
+        ]).then(() => {
+          doc.addImage(fundo, "PNG", 50, 60, 120, 120, "", "FAST");
+          doc.addImage(logo, "PNG", 150, 10, 40, 20);
+
+          // Título
+          doc.setFontSize(16);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(113, 35, 61);
+          doc.text("COMPROVANTE DE REGISTRO DE RETIRADA DE EPI", 20, 40);
+
+          // Dados
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(0, 0, 0);
+
+          let y = 55;
+          doc.text(`Nome do Colaborador: ${registro.nome}`, 20, y); y += 10;
+          doc.text(`Obra: ${registro.obra}`, 20, y); y += 10;
+          doc.text(`Operação: ${registro.operacao}`, 20, y); y += 10;
+          doc.text(`Data de Retirada: ${registro.data}`, 20, y); y += 10;
+          doc.text(`EPI: ${registro.epi}`, 20, y); y += 10;
+          doc.text(`CA do EPI: ${registro.ca}`, 20, y); y += 20;
+
+          // Sessão comprovação
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(113, 35, 61);
+          doc.text("COMPROVAÇÃO DO COLABORADOR", 20, y);
+          y += 15;
+
+          doc.setTextColor(0, 0, 0);
+          doc.text("Foto", 40, y);
+          doc.text("Assinatura", 140, y);
+          y += 5;
+
+          if (registro.foto) doc.addImage(registro.foto, "PNG", 20, y, 70, 50);
+          if (registro.assinatura) doc.addImage(registro.assinatura, "PNG", 120, y, 70, 50);
+
+          y += 65;
+          doc.setDrawColor(113, 35, 61);
+          doc.line(20, y, 190, y);
+
+          // Salvar PDF
+          doc.save(`Comprovante_EPI_${registro.nome}.pdf`);
+
+          alert("Registro salvo e PDF gerado com sucesso!");
+          document.getElementById("formEPI").reset();
+          limparAssinatura();
+          ctxFoto.clearRect(0, 0, fotoCanvas.width, fotoCanvas.height);
+        }).catch(err => {
+          console.error("Erro ao carregar imagens para o PDF:", err);
+          alert("Ocorreu um erro ao gerar o PDF. Verifique os caminhos das imagens.");
+        });
+      });
     });
   </script>
-
 </body>
 
 </html>
