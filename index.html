@@ -36,7 +36,7 @@
           <input type="text" id="epi" required>
 
           <label for="ca">CA do EPI</label>
-          <input type="text" id="ca" required>
+          <input type="text" id="ca" placeholder="Caso não tenha CA, digite 0" required>
         </div>
         <div class="b2">
           <div class="camera">
@@ -192,9 +192,9 @@
           let y = 55;
           doc.text(`Nome do Colaborador: ${registro.nome}`, 20, y); y += 10;
           doc.text(`Obra: ${registro.obra}`, 20, y); y += 10;
-          doc.text(`Operação: ${registro.operacao}`, 20, y); y += 10;
-          doc.text(`Data de Retirada: ${registro.data}`, 20, y); y += 10;
-          doc.text(`EPI: ${registro.epi}`, 20, y); y += 10;
+          doc.text(`Retirada: ${registro.operacao}`, 20, y); y += 10;
+          doc.text(`Data: ${registro.data}`, 20, y); y += 10;
+          doc.text(`Nome do Item: ${registro.epi}`, 20, y); y += 10;
           doc.text(`CA do EPI: ${registro.ca}`, 20, y); y += 20;
 
           // Sessão comprovação

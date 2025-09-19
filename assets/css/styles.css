@@ -113,6 +113,11 @@
      font-weight: bold;
  }
 
+ input::placeholder {
+    color: #000000;
+    font-size: 12px;
+ }
+
  input,
  select {
      background-color: #cecece;
