@@ -1,233 +1,266 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Controle de EPIs</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <link rel="stylesheet" href="assets/css/styles.css">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/styles.css" />
 </head>
 <body>
   <header>
-    <h1>Registro de Almoxarife</h1>
+    <h2>Registro de EPIs / Utensílios</h2>
     <img src="assets/img/Logo_Singapura.png" alt="Logo Singapura">
   </header>
 
   <main>
     <form id="formEPI">
-      <div class="all">
-        <div class="b1">
-          <label for="nome">Nome do Funcionário</label>
-          <input type="text" id="nome" required>
+      <label>Nome do Funcionário:</label>
+      <input type="text" id="nome" placeholder="Digite seu nome">
 
-          <label for="obra">Obra</label>
-          <input type="text" id="obra" required>
+      <label>Obra:</label>
+      <input type="text" id="obra" placeholder="Digite a obra que está"required>
 
-          <label for="operacao">Retirada</label>
-          <select id="operacao" required>
-            <option value="EPI">EPI</option>
-            <option value="Utensílio">Utensílio</option>
-          </select>
+      <label>Tipo de Registro:</label>
+      <select id="tipo" required>
+        <option value="EPI">EPI</option>
+        <option value="Utensílio">Utensílio</option>
+      </select>
 
-          <label for="data">Data</label>
-          <input type="date" id="data" required>
+      <label>Data:</label>
+      <input type="date" id="data" required>
 
-          <label for="epi">Nome do Item</label>
-          <input type="text" id="epi" required>
-
-          <label for="ca">CA do EPI</label>
-          <input type="text" id="ca" placeholder="Caso não tenha CA, digite 0" required>
-        </div>
-        <div class="b2">
-          <div class="camera">
-            <div>
-              <h3>Comprovação por Foto</h3>
-            </div><br>
-            <div class="cam">
-              <video id="video" width="300" height="200" autoplay></video><br>
-              <canvas id="fotoCanvas" width="300" height="200"></canvas>
-            </div>
-            <button type="button" onclick="tirarFoto()">Tirar Foto</button><br>
-          </div>
-
-          <div class="assinatura">
-            <h3>Ou Assinatura Digital</h3><br>
-            <canvas id="assinatura" width="300" height="200"></canvas><br>
-            <button type="button" onclick="limparAssinatura()">Limpar Assinatura</button>
-          </div>
+      <div id="episContainer">
+        <label>EPIs / Utensílios:</label>
+        <div class="epiItem">
+          <input type="text" class="epiNome" placeholder="Nome do EPI / Utensílio" required>
+          <input type="text" class="epiCA" placeholder="CA (se aplicável)">
         </div>
       </div>
-      <div class="btnsave">
-        <button type="submit">Salvar Registro</button>
+      <button type="button" id="addEPI">+ Adicionar EPI</button>
+
+      <label>Observações adicionais:</label>
+      <textarea id="observacoes" placeholder="Digite aqui observações sobre a retirada, estado dos EPIs, etc."></textarea>
+
+      <div class="b2">
+        <div class="camera">
+          <h3>Comprovação por Foto</h3>
+          <label for="cameraSelect">Selecione a câmera</label>
+          <select id="cameraSelect"></select><br>
+          <video id="video" width="300" height="200" autoplay playsinline></video><br>
+          <button type="button" id="tirarFotoBtn">Tirar Foto</button>
+          <div id="fotosContainer" aria-live="polite"></div>
+        </div>
+
+        <div class="assinatura">
+          <h3>Assinatura Digital</h3><br>
+          <canvas id="assinatura" width="300" height="200"></canvas><br>
+          <button type="button" id="limparAss" >Limpar Assinatura</button>
+        </div>
+      </div>
+
+      <div style="text-align:center; margin-top:12px;">
+        <button type="submit" id="salvarBtn">Salvar Registro (Gerar PDF)</button>
       </div>
     </form>
   </main>
 
-  <script>
-    // O código agora está envolto em um evento que garante que o DOM está pronto.
-    document.addEventListener('DOMContentLoaded', () => {
-
-      // Ativar câmera
-      const video = document.getElementById('video');
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => { video.srcObject = stream; })
-        .catch(err => { alert("Erro ao acessar câmera: " + err); });
-
-      // Captura de foto
-      const fotoCanvas = document.getElementById("fotoCanvas");
-      const ctxFoto = fotoCanvas.getContext("2d");
-
-      window.tirarFoto = function () {
-        ctxFoto.drawImage(video, 0, 0, fotoCanvas.width, fotoCanvas.height);
-      };
-
-      // Assinatura digital (mouse + touch)
-      const canvas = document.getElementById("assinatura");
-      const ctx = canvas.getContext("2d");
-      let desenhando = false;
-
-      function getPosicao(e) {
-        const rect = canvas.getBoundingClientRect();
-        if (e.touches) {
-          return {
-            x: e.touches[0].clientX - rect.left,
-            y: e.touches[0].clientY - rect.top
-          };
-        } else {
-          return { x: e.offsetX, y: e.offsetY };
-        }
-      }
-
-      function desenhar(e) {
-        if (!desenhando) return;
-        const pos = getPosicao(e);
-        ctx.lineWidth = 2;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = "black";
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
-      }
-
-      // Eventos mouse
-      canvas.addEventListener("mousedown", (e) => {
-        desenhando = true;
-        const pos = getPosicao(e);
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
-      });
-      canvas.addEventListener("mouseup", () => {
-        desenhando = false;
-      });
-      canvas.addEventListener("mousemove", desenhar);
-
-      // Eventos touch
-      canvas.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        desenhando = true;
-        const pos = getPosicao(e);
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
-      });
-      canvas.addEventListener("touchend", () => {
-        desenhando = false;
-      });
-      canvas.addEventListener("touchmove", (e) => {
-        e.preventDefault();
-        desenhar(e);
-      });
-
-      window.limparAssinatura = function () {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      };
-
-      // Salvar dados e gerar PDF
-      document.getElementById("formEPI").addEventListener("submit", function (e) {
-        e.preventDefault();
-
-        // Verificação para garantir que o formulário está sendo submetido
-        console.log("Evento de submit acionado!");
-
-        const registro = {
-          nome: document.getElementById("nome").value,
-          obra: document.getElementById("obra").value,
-          operacao: document.getElementById("operacao").value,
-          data: document.getElementById("data").value,
-          epi: document.getElementById("epi").value,
-          ca: document.getElementById("ca").value,
-          foto: fotoCanvas.toDataURL(),
-          assinatura: canvas.toDataURL()
-        };
-
-        // Criar PDF
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-
-        const fundo = new Image();
-        fundo.src = "assets/img/Fundo_Logo.png";
-
-        const logo = new Image();
-        logo.src = "assets/img/Logo_Singapura.png";
-
-        // Carregar imagens antes de gerar o PDF
-        Promise.all([
-          new Promise(resolve => fundo.onload = resolve),
-          new Promise(resolve => logo.onload = resolve)
-        ]).then(() => {
-          doc.addImage(fundo, "PNG", 50, 60, 120, 120, "", "FAST");
-          doc.addImage(logo, "PNG", 150, 10, 40, 20);
-
-          // Título
-          doc.setFontSize(16);
-          doc.setFont("helvetica", "bold");
-          doc.setTextColor(113, 35, 61);
-          doc.text("COMPROVANTE DE REGISTRO DE RETIRADA DE EPI", 20, 40);
-
-          // Dados
-          doc.setFontSize(12);
-          doc.setFont("helvetica", "normal");
-          doc.setTextColor(0, 0, 0);
-
-          let y = 55;
-          doc.text(`Nome do Colaborador: ${registro.nome}`, 20, y); y += 10;
-          doc.text(`Obra: ${registro.obra}`, 20, y); y += 10;
-          doc.text(`Retirada: ${registro.operacao}`, 20, y); y += 10;
-          doc.text(`Data: ${registro.data}`, 20, y); y += 10;
-          doc.text(`Nome do Item: ${registro.epi}`, 20, y); y += 10;
-          doc.text(`CA do EPI: ${registro.ca}`, 20, y); y += 20;
-
-          // Sessão comprovação
-          doc.setFont("helvetica", "bold");
-          doc.setTextColor(113, 35, 61);
-          doc.text("COMPROVAÇÃO DO COLABORADOR", 20, y);
-          y += 15;
-
-          doc.setTextColor(0, 0, 0);
-          doc.text("Foto", 40, y);
-          doc.text("Assinatura", 140, y);
-          y += 5;
-
-          if (registro.foto) doc.addImage(registro.foto, "PNG", 20, y, 70, 50);
-          if (registro.assinatura) doc.addImage(registro.assinatura, "PNG", 120, y, 70, 50);
-
-          y += 65;
-          doc.setDrawColor(113, 35, 61);
-          doc.line(20, y, 190, y);
-
-          // Salvar PDF
-          doc.save(`Comprovante_EPI_${registro.nome}.pdf`);
-
-          alert("Registro salvo e PDF gerado com sucesso!");
-          document.getElementById("formEPI").reset();
-          limparAssinatura();
-          ctxFoto.clearRect(0, 0, fotoCanvas.width, fotoCanvas.height);
-        }).catch(err => {
-          console.error("Erro ao carregar imagens para o PDF:", err);
-          alert("Ocorreu um erro ao gerar o PDF. Verifique os caminhos das imagens.");
-        });
-      });
+<script>
+(async ()=>{
+  function loadImage(src){
+    return new Promise(resolve=>{
+      if(!src){ resolve(null); return; }
+      const img = new Image();
+      img.onload = ()=>resolve(img);
+      img.onerror = ()=>resolve(null);
+      img.src = src;
     });
-  </script>
+  }
+
+  // CÂMERA
+  const video = document.getElementById('video');
+  const cameraSelect = document.getElementById('cameraSelect');
+  const tirarFotoBtn = document.getElementById('tirarFotoBtn');
+  const fotosContainer = document.getElementById('fotosContainer');
+  let fotos = [];
+  let streamAtual = null;
+  let deviceList = [];
+
+  async function listarCameras(){
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    deviceList = devices.filter(d=>d.kind==='videoinput');
+    cameraSelect.innerHTML='';
+    deviceList.forEach((d,i)=>{
+      const opt=document.createElement('option');
+      opt.value=d.deviceId;
+      opt.text=d.label||`Câmera ${i+1}`;
+      cameraSelect.appendChild(opt);
+    });
+  }
+
+  async function iniciarCamera(deviceId){
+    if(streamAtual) streamAtual.getTracks().forEach(t=>t.stop());
+    const constraints = { video: deviceId ? { deviceId:{exact:deviceId} } : true };
+    streamAtual = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = streamAtual;
+  }
+
+  cameraSelect.addEventListener('change', e=>iniciarCamera(e.target.value));
+
+  tirarFotoBtn.addEventListener('click', ()=>{
+    const cvs=document.createElement('canvas');
+    cvs.width=300; cvs.height=200;
+    const ctx=cvs.getContext('2d');
+    ctx.drawImage(video,0,0,cvs.width,cvs.height);
+    const data=cvs.toDataURL('image/png');
+    fotos.push(data);
+
+    const div=document.createElement('div');
+    div.className='fotoItem';
+    const img=document.createElement('img');
+    img.src=data; img.width=120; img.height=90;
+    const label=document.createElement('span');
+    label.textContent = `Foto ${fotos.length}`;
+    const btn=document.createElement('button');
+    btn.textContent='Remover';
+    btn.onclick=()=>{ 
+      fotos=fotos.filter(f=>f!==data); 
+      fotosContainer.removeChild(div); 
+    };
+    div.append(label,img,btn);
+    fotosContainer.appendChild(div);
+  });
+
+  try{
+    await navigator.mediaDevices.getUserMedia({video:true});
+    await listarCameras();
+    if(deviceList.length>0) iniciarCamera(deviceList[0].deviceId);
+  }catch(e){ alert("Erro ao acessar câmera: "+e); }
+
+  // ASSINATURA
+  const canvas=document.getElementById('assinatura');
+  const ctx=canvas.getContext('2d');
+  let desenhando=false;
+  function getPos(e){
+    const r=canvas.getBoundingClientRect();
+    if(e.touches) return {x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};
+    return {x:e.offsetX,y:e.offsetY};
+  }
+  function desenhar(e){
+    if(!desenhando) return;
+    const p=getPos(e);
+    ctx.lineWidth=2; ctx.lineCap='round'; ctx.strokeStyle='black';
+    ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y);
+  }
+  canvas.addEventListener('mousedown',()=>desenhando=true);
+  canvas.addEventListener('mouseup',()=>{desenhando=false;ctx.beginPath();});
+  canvas.addEventListener('mousemove',desenhar);
+  canvas.addEventListener('touchstart',e=>{desenhando=true;const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();desenhar(e);});
+  canvas.addEventListener('touchend',()=>{desenhando=false;ctx.beginPath();});
+  document.getElementById('limparAss').addEventListener('click',()=>ctx.clearRect(0,0,canvas.width,canvas.height));
+
+  // ADICIONAR EPI
+  document.getElementById('addEPI').addEventListener('click',()=>{
+    const d=document.createElement('div');
+    d.className='epiItem';
+    d.innerHTML=`<input type="text" class="epiNome" placeholder="Nome do EPI / Utensílio" required>
+                 <input type="text" class="epiCA" placeholder="CA (se aplicável)">
+                 <button type="button" class="removeEPI">Remover</button>`;
+    document.getElementById('episContainer').appendChild(d);
+    d.querySelector('.removeEPI').addEventListener('click',()=>d.remove());
+  });
+
+  // GERAR PDF
+  document.getElementById('formEPI').addEventListener('submit', async function(e){
+    e.preventDefault();
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit:'pt', format:'a4' });
+    const logo = await loadImage('assets/img/Logo_Singapura.png');
+    const fundo = await loadImage('assets/img/Fundo_Logo.png');
+
+    const nome=document.getElementById('nome').value;
+    const obra=document.getElementById('obra').value;
+    const tipo=document.getElementById('tipo').value;
+    const data=document.getElementById('data').value;
+    const obs=document.getElementById('observacoes').value.trim();
+    const epis=Array.from(document.querySelectorAll('.epiItem')).map(i=>({
+      nome:i.querySelector('.epiNome').value,
+      ca:i.querySelector('.epiCA').value
+    }));
+    const assinatura=canvas.toDataURL();
+
+    function cabecalho(){
+      if(fundo) doc.addImage(fundo,'PNG',150,120,200,200,'','FAST');
+      if(logo) doc.addImage(logo,'PNG',doc.internal.pageSize.width-120,20,80,40);
+      doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(113,35,61);
+      doc.text('COMPROVANTE DE REGISTRO DE EPI / UTENSÍLIO',40,60);
+    }
+
+    cabecalho();
+    doc.setFontSize(12); doc.setTextColor(0,0,0);
+    let y=90;
+    doc.text(`Nome do Colaborador: ${nome}`,40,y); y+=18;
+    doc.text(`Obra: ${obra}`,40,y); y+=18;
+    doc.text(`Tipo: ${tipo}`,40,y); y+=18;
+    doc.text(`Data: ${data}`,40,y); y+=24;
+    doc.text('EPIs / Utensílios:',40,y); y+=16;
+    epis.forEach(e=>{doc.text(`- ${e.nome} (CA: ${e.ca||'N/A'})`,50,y);y+=16;});
+
+    if(obs){
+      y+=20;
+      doc.setFont('helvetica','bold'); doc.setTextColor(113,35,61);
+      doc.text('OBSERVAÇÕES:',40,y); y+=12;
+      doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0);
+      const lines = doc.splitTextToSize(obs, 500);
+      doc.text(lines,40,y);
+      y += lines.length * 14;
+    }
+
+    y+=24;
+    doc.setFont('helvetica','bold'); doc.setTextColor(113,35,61);
+    doc.text('COMPROVAÇÃO DO COLABORADOR',40,y);
+    y+=20;
+
+    const fotoAltura = 120;
+    fotos.forEach((f,i)=>{
+      if(y+fotoAltura>750){doc.addPage();cabecalho();y=90;}
+      doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(0,0,0);
+      doc.text(`Foto ${i+1}`,40,y);
+      y+=10;
+      doc.addImage(f,'PNG',40,y,250,fotoAltura);
+      y+=fotoAltura+20;
+    });
+
+    doc.setDrawColor(113,35,61);
+    doc.line(40, y, 550, y);
+    y+=15;
+
+    if(y+100>750){doc.addPage();cabecalho();y=90;}
+    doc.text('Assinatura:',40,y);
+    doc.addImage(assinatura,'PNG',40,y+10,160,70);
+
+    // Rodapé
+    const total = doc.getNumberOfPages();
+    const now = new Date().toLocaleString();
+    for(let i=1;i<=total;i++){
+      doc.setPage(i);
+      doc.setFontSize(9);
+      doc.setTextColor(100);
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      doc.text(`Emitido em ${now}`,40,pageH-30);
+      doc.text(`Página ${i} de ${total}`,pageW-100,pageH-30);
+    }
+
+    doc.save(`Comprovante_${nome}.pdf`);
+    alert('PDF gerado com sucesso!');
+    this.reset();
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    fotos=[]; fotosContainer.innerHTML='';
+  });
+})();
+</script>
 </body>
 </html>
