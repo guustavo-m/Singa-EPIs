@@ -1,0 +1,2 @@
+This software has the main objective to automate the production of receipts after the collection of items or IPEs in a construction site. Where the storekeeper would register the data needed to prove that the collaborator took the item and he has the knowledge that he has done that.
+Although it seems a bit redundant, this has a more political objective. We aim to reduce problems which involve steals, legal proceeding and many other dillemas that can happen over time.
